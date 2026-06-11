@@ -1,0 +1,6 @@
+- summarize all news
+- smart news algo
+- real-time scores
+- notifications
+- support multiple leagues
+ 
