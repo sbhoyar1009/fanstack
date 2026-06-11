@@ -12,11 +12,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing ?sport or ?teamId' }, { status: 400 })
   }
 
-  const profile = await withCache(
-    `team-profile:${sport}:${teamId}`,
-    TTL.TEAMS,
-    () => getTeamProfile(sport, teamId),
-  )
-
-  return NextResponse.json({ profile })
+  try {
+    const profile = await withCache(
+      `team-profile:${sport}:${teamId}`,
+      TTL.TEAMS,
+      () => getTeamProfile(sport, teamId),
+    )
+    return NextResponse.json({ profile })
+  } catch (err) {
+    console.error('[/api/teams/profile]', err)
+    return NextResponse.json({ error: 'Failed to fetch team profile' }, { status: 500 })
+  }
 }
