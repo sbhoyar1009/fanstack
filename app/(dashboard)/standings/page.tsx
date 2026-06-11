@@ -136,7 +136,7 @@ function StandingsContent() {
                             <td className="px-2 py-2.5 text-center text-xs font-bold text-primary tabular-nums">{entry.points}</td>
                           )}
                           <td className="px-2 py-2.5 text-center text-xs text-muted-foreground tabular-nums hidden sm:table-cell">
-                            {(entry.pct * (entry.pct > 1 ? 1 : 1)).toFixed(3).replace('0.', '.')}
+                            {entry.pct.toFixed(3).replace('0.', '.')}
                           </td>
                           {entry.gb != null && (
                             <td className="px-2 py-2.5 text-center text-xs text-muted-foreground tabular-nums hidden sm:table-cell">
