@@ -59,7 +59,7 @@ export default function LoginPage() {
           <ul className="space-y-1.5">
             {[
               ['🏀', 'Live scores for NBA, NFL, EPL, F1 + more'],
-              ['✦',  'AI game summaries powered by Claude'],
+              ['✦',  'AI game summaries powered by Gemini'],
               ['📰', 'News from ESPN, BBC, Reuters & more'],
               ['📅', 'Weekly schedule with conflict alerts'],
             ].map(([icon, text]) => (
@@ -72,7 +72,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-[11px] text-muted-foreground/50">
-          Sports data from ESPN · AI by Anthropic Claude
+          Sports data from ESPN · AI by Google Gemini
         </p>
       </div>
     </div>
