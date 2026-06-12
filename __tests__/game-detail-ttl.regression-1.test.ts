@@ -16,7 +16,7 @@ describe('game detail TTL selection', () => {
   it('returns TTL.LIVE (30s) for an in-progress game', () => {
     // TTL.LIVE = 30 seconds; live games must expire fast
     const TTL = { LIVE: 30, UPCOMING: 300, FINISHED: 3600, STANDINGS: 900, NEWS: 600, TEAMS: 86400 }
-    const status = 'in'
+    const status: string = 'in'
     const ttl = status === 'in' ? TTL.LIVE
       : status === 'post' ? TTL.FINISHED
       : TTL.UPCOMING
@@ -25,7 +25,7 @@ describe('game detail TTL selection', () => {
 
   it('returns TTL.FINISHED (3600s) for a completed game', () => {
     const TTL = { LIVE: 30, UPCOMING: 300, FINISHED: 3600, STANDINGS: 900, NEWS: 600, TEAMS: 86400 }
-    const status = 'post'
+    const status: string = 'post'
     const ttl = status === 'in' ? TTL.LIVE
       : status === 'post' ? TTL.FINISHED
       : TTL.UPCOMING
@@ -34,7 +34,7 @@ describe('game detail TTL selection', () => {
 
   it('returns TTL.UPCOMING (300s) for a pre-game', () => {
     const TTL = { LIVE: 30, UPCOMING: 300, FINISHED: 3600, STANDINGS: 900, NEWS: 600, TEAMS: 86400 }
-    const status = 'pre'
+    const status: string = 'pre'
     const ttl = status === 'in' ? TTL.LIVE
       : status === 'post' ? TTL.FINISHED
       : TTL.UPCOMING

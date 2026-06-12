@@ -2,25 +2,27 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { TeamBriefContext } from '@/lib/anthropic'
 
 // vi.mock is hoisted above imports — must use factory with no top-level vars
-const mockCreate = vi.fn()
+const mockGenerateContent = vi.fn()
+const mockGetGenerativeModel = vi.fn(() => ({ generateContent: mockGenerateContent }))
 
-vi.mock('@anthropic-ai/sdk', () => ({
-  default: class MockAnthropic {
-    messages = { create: mockCreate }
+vi.mock('@google/generative-ai', () => ({
+  GoogleGenerativeAI: class MockGoogleGenerativeAI {
+    getGenerativeModel = mockGetGenerativeModel
   },
 }))
 
-vi.stubEnv('ANTHROPIC_API_KEY', 'test-key')
+vi.stubEnv('GEMINI_API_KEY', 'test-key')
 
 describe('generateTeamBrief', () => {
   beforeEach(() => {
     vi.resetModules()
-    mockCreate.mockReset()
+    mockGenerateContent.mockReset()
+    mockGetGenerativeModel.mockClear()
   })
 
-  it('calls Claude and returns the brief text', async () => {
-    mockCreate.mockResolvedValue({
-      content: [{ type: 'text', text: 'Arsenal beat Man City 2-1, Saka scored twice.' }],
+  it('calls Gemini and returns the brief text', async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => 'Arsenal beat Man City 2-1, Saka scored twice.' },
     })
 
     const { generateTeamBrief } = await import('@/lib/anthropic')
@@ -38,8 +40,8 @@ describe('generateTeamBrief', () => {
   })
 
   it('includes team name and scores in the prompt', async () => {
-    mockCreate.mockResolvedValue({
-      content: [{ type: 'text', text: 'Brief.' }],
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => 'Brief.' },
     })
 
     const { generateTeamBrief } = await import('@/lib/anthropic')
@@ -52,14 +54,14 @@ describe('generateTeamBrief', () => {
       last_known_context: null,
     })
 
-    const prompt = mockCreate.mock.calls[0][0].messages[0].content as string
+    const prompt = mockGenerateContent.mock.calls[0][0] as string
     expect(prompt).toContain('Arsenal')
     expect(prompt).toContain('W 2–1')
   })
 
-  it('requests max_tokens of 120', async () => {
-    mockCreate.mockResolvedValue({
-      content: [{ type: 'text', text: 'Brief.' }],
+  it('uses gemini-2.0-flash model', async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: { text: () => 'Brief.' },
     })
 
     const { generateTeamBrief } = await import('@/lib/anthropic')
@@ -72,13 +74,13 @@ describe('generateTeamBrief', () => {
       last_known_context: null,
     })
 
-    expect(mockCreate.mock.calls[0][0].max_tokens).toBe(120)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const calls = mockGetGenerativeModel.mock.calls as unknown as Array<[{ model: string }]>
+    expect(calls[0]?.[0]?.model).toBe('gemini-2.0-flash')
   })
 
-  it('throws if response type is not text', async () => {
-    mockCreate.mockResolvedValue({
-      content: [{ type: 'tool_use', id: '1' }],
-    })
+  it('throws if GEMINI_API_KEY is missing', async () => {
+    vi.stubEnv('GEMINI_API_KEY', '')
 
     const { generateTeamBrief } = await import('@/lib/anthropic')
 
@@ -88,6 +90,6 @@ describe('generateTeamBrief', () => {
       top_headline: null,
       injury_flags: [],
       last_known_context: null,
-    })).rejects.toThrow('Unexpected response type')
+    })).rejects.toThrow('Missing GEMINI_API_KEY')
   })
 })

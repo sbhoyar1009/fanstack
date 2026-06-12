@@ -1,14 +1,14 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import type { NormalizedGame } from '@/types/sports'
 
-let _client: Anthropic | null = null
+let _client: GoogleGenerativeAI | null = null
 
-function getClient(): Anthropic {
+function getClient(): GoogleGenerativeAI {
   if (!_client) {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('Missing ANTHROPIC_API_KEY env var')
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('Missing GEMINI_API_KEY env var')
     }
-    _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    _client = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   }
   return _client
 }
@@ -22,7 +22,7 @@ export type TeamBriefContext = {
 }
 
 export async function generateTeamBrief(context: TeamBriefContext): Promise<string> {
-  const client = getClient()
+  const model = getClient().getGenerativeModel({ model: 'gemini-2.0-flash' })
 
   const scoresText = context.recent_scores.length > 0
     ? context.recent_scores.map(s => `${s.date}: ${s.result} vs ${s.opponent}`).join('; ')
@@ -49,19 +49,12 @@ Tone: "tell me what happened so I can talk about it — skip the stats, name the
 Example: "Arsenal beat Man City 2-1, Saka scored twice, City are now 4 points back with 3 games left."
 Do NOT use bullet points. Do NOT start with "Here's" or "In summary".`
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 120,
-    messages: [{ role: 'user', content: prompt }],
-  })
-
-  const content = message.content[0]
-  if (content.type !== 'text') throw new Error('Unexpected response type from Claude')
-  return content.text.trim()
+  const result = await model.generateContent(prompt)
+  return result.response.text().trim()
 }
 
 export async function generateGameSummary(game: NormalizedGame): Promise<string> {
-  const client = getClient()
+  const model = getClient().getGenerativeModel({ model: 'gemini-2.0-flash' })
 
   const { homeTeam, awayTeam, league, statusText } = game
   const scoreStr = game.status === 'post'
@@ -82,13 +75,6 @@ Rules:
 - Do NOT start with "In a" or "In what was"
 - Keep it under 80 words total`
 
-  const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 200,
-    messages: [{ role: 'user', content: prompt }],
-  })
-
-  const content = message.content[0]
-  if (content.type !== 'text') throw new Error('Unexpected response type from Claude')
-  return content.text.trim()
+  const result = await model.generateContent(prompt)
+  return result.response.text().trim()
 }
