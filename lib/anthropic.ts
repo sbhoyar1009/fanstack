@@ -53,6 +53,40 @@ Do NOT use bullet points. Do NOT start with "Here's" or "In summary".`
   return result.response.text().trim()
 }
 
+export type PreMatchContext = {
+  homeTeam: string
+  awayTeam: string
+  league: string
+  kickoffTime: string
+  homeForm: string[]   // last 5 results e.g. ['W','W','L','D','W']
+  awayForm: string[]
+  stakes?: string      // e.g. "title decider", "relegation six-pointer"
+}
+
+export async function generatePreMatchPreview(ctx: PreMatchContext): Promise<string> {
+  const model = getClient().getGenerativeModel({ model: 'gemini-2.5-flash' })
+
+  const homeFormStr = ctx.homeForm.length ? ctx.homeForm.join('-') : 'Unknown form'
+  const awayFormStr = ctx.awayForm.length ? ctx.awayForm.join('-') : 'Unknown form'
+  const stakesStr   = ctx.stakes ? ` Stakes: ${ctx.stakes}.` : ''
+
+  const prompt = `You are a sharp sports previewer. Write a match preview in exactly 2-3 sentences.
+
+${ctx.awayTeam} vs ${ctx.homeTeam} — ${ctx.league}
+${ctx.homeTeam} recent form: ${homeFormStr}
+${ctx.awayTeam} recent form: ${awayFormStr}${stakesStr}
+
+Rules:
+- Name both teams, mention who's in better form
+- One concrete prediction or key matchup to watch
+- Conversational, punchy — no filler
+- Under 60 words
+- Do NOT start with "In a" or use generic phrases`
+
+  const result = await model.generateContent(prompt)
+  return result.response.text().trim()
+}
+
 export async function generateGameSummary(game: NormalizedGame): Promise<string> {
   const model = getClient().getGenerativeModel({ model: 'gemini-2.5-flash' })
 

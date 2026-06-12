@@ -59,7 +59,7 @@ describe('generateTeamBrief', () => {
     expect(prompt).toContain('W 2–1')
   })
 
-  it('uses gemini-2.0-flash model', async () => {
+  it('uses gemini-2.5-flash model', async () => {
     mockGenerateContent.mockResolvedValue({
       response: { text: () => 'Brief.' },
     })
@@ -76,7 +76,7 @@ describe('generateTeamBrief', () => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const calls = mockGetGenerativeModel.mock.calls as unknown as Array<[{ model: string }]>
-    expect(calls[0]?.[0]?.model).toBe('gemini-2.0-flash')
+    expect(calls[0]?.[0]?.model).toBe('gemini-2.5-flash')
   })
 
   it('throws if GEMINI_API_KEY is missing', async () => {

@@ -14,6 +14,8 @@ import {
   MapPin, Tv, Users, PlayCircle, ChevronRight,
   TrendingUp, Zap, BarChart3, ListOrdered,
 } from 'lucide-react'
+import { PreGameCard } from '@/components/PreGameCard'
+import { ShareCard } from '@/components/ShareCard'
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
@@ -77,6 +79,22 @@ export default function GameDetailPage({
           <Scoreboard game={game} />
         )}
 
+        {/* Pre-game AI preview */}
+        {game?.status === 'pre' && (
+          <div className="mt-4 mb-2">
+            <PreGameCard
+              homeTeam={game.homeTeam.name}
+              awayTeam={game.awayTeam.name}
+              league={game.league}
+              kickoffTime={game.startTime}
+              homeForm={[]}
+              awayForm={[]}
+              gameId={gameId}
+              sport={sportKey}
+            />
+          </div>
+        )}
+
         {/* Meta row */}
         {game && (
           <div className="flex flex-wrap items-center gap-4 mt-4 pb-4 text-xs text-muted-foreground">
@@ -95,17 +113,23 @@ export default function GameDetailPage({
                 <Tv className="w-3 h-3" /> {game.broadcasts.join(', ')}
               </span>
             )}
-            {game.status === 'post' && (
-              <a
-                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 font-semibold transition-colors"
-              >
-                <PlayCircle className="w-3.5 h-3.5" />
-                Highlights
-              </a>
-            )}
+            <div className="ml-auto flex items-center gap-2">
+              <ShareCard
+                title={`${game.awayTeam.name} vs ${game.homeTeam.name}`}
+                text={`${game.awayTeam.score}–${game.homeTeam.score} · ${game.league}`}
+              />
+              {game.status === 'post' && (
+                <a
+                  href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ytQuery)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500/20 font-semibold transition-colors text-xs"
+                >
+                  <PlayCircle className="w-3.5 h-3.5" />
+                  Highlights
+                </a>
+              )}
+            </div>
           </div>
         )}
       </div>

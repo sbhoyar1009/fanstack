@@ -44,7 +44,27 @@ export type DbUserTeam = {
   team_id: string
   team_name: string
   team_logo: string
+  team_context: string | null
   created_at: string
+}
+
+export type DbUserSettings = {
+  user_id: string
+  digest_format: 'brief' | 'detailed'
+  digest_time: string
+  timezone: string
+  email_enabled: boolean
+  notification_prefs: { kickoff: boolean; finalScore: boolean; injury: boolean }
+  push_subscription: unknown
+  updated_at: string
+}
+
+export type DbDigestHistory = {
+  id: string
+  user_id: string
+  generated_at: string
+  content: unknown
+  format: string
 }
 
 export type DbGameSummary = {
@@ -226,5 +246,92 @@ export async function saveTeamScheduleCache(
       { sport_key: sportKey, team_id: teamId, schedule, fetched_at: new Date().toISOString() },
       { onConflict: 'sport_key,team_id' }
     )
+  if (error) throw error
+}
+
+// ─── User settings ────────────────────────────────────────────────────────────
+
+export async function getUserSettings(userId: string): Promise<DbUserSettings | null> {
+  const db = getSupabase()
+  const { data, error } = await db
+    .from('user_settings')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+  if (error || !data) return null
+  return data as DbUserSettings
+}
+
+export async function upsertUserSettings(
+  userId: string,
+  settings: Partial<Omit<DbUserSettings, 'user_id' | 'updated_at'>>
+): Promise<void> {
+  const db = getSupabase()
+  const { error } = await db
+    .from('user_settings')
+    .upsert(
+      { user_id: userId, ...settings, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id' }
+    )
+  if (error) throw error
+}
+
+// ─── Digest history ───────────────────────────────────────────────────────────
+
+export async function getTodaysDigest(userId: string): Promise<DbDigestHistory | null> {
+  const db = getSupabase()
+  const today = new Date().toISOString().split('T')[0]
+  const { data, error } = await db
+    .from('digest_history')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('generated_at', `${today}T00:00:00Z`)
+    .lte('generated_at', `${today}T23:59:59Z`)
+    .order('generated_at', { ascending: false })
+    .limit(1)
+    .single()
+  if (error || !data) return null
+  return data as DbDigestHistory
+}
+
+export async function saveDigestHistory(
+  userId: string,
+  content: unknown,
+  format: string = 'brief'
+): Promise<void> {
+  const db = getSupabase()
+  const { error } = await db
+    .from('digest_history')
+    .insert({ user_id: userId, content, format, generated_at: new Date().toISOString() })
+  if (error) throw error
+}
+
+export async function getDigestHistory(userId: string, limit = 7): Promise<DbDigestHistory[]> {
+  const db = getSupabase()
+  const { data, error } = await db
+    .from('digest_history')
+    .select('*')
+    .eq('user_id', userId)
+    .order('generated_at', { ascending: false })
+    .limit(limit)
+  if (error) return []
+  return (data ?? []) as DbDigestHistory[]
+}
+
+// ─── Storyline memory (team_context) ─────────────────────────────────────────
+
+export async function updateTeamContext(
+  userId: string,
+  sportKey: string,
+  teamId: string,
+  context: string
+): Promise<void> {
+  const db = getSupabase()
+  const { error } = await db
+    .from('user_teams')
+    .update({ team_context: context })
+    .eq('user_id', userId)
+    .eq('sport_key', sportKey)
+    .eq('team_id', teamId)
   if (error) throw error
 }

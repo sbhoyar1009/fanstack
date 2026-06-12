@@ -316,6 +316,123 @@ export async function getGameDetail(sport: SportKey, gameId: string): Promise<Ga
   }
 }
 
+// ─── Player profile ───────────────────────────────────────────────────────────
+
+export type PlayerProfile = {
+  id: string
+  name: string
+  fullName: string
+  headshot?: string
+  jersey?: string
+  position: string
+  age?: number
+  height?: string
+  weight?: string
+  birthPlace?: string
+  experience?: string
+  college?: string
+  sport: SportKey
+  team?: { id: string; name: string; logo: string; color: string }
+  statistics?: Array<{ name: string; displayValue: string; description?: string }>
+}
+
+export async function getPlayerProfile(sport: SportKey, athleteId: string): Promise<PlayerProfile | null> {
+  if (sport === 'f1') return null
+  const { path } = SPORT_CONFIGS[sport]
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await espnFetch(`${ESPN_SITE}/${path}/athletes/${athleteId}`) as any
+    const a = data?.athlete ?? {}
+
+    const teamRef = a.team ?? a.teams?.[0]?.team
+    const statsArr = (a.statistics?.splits?.categories ?? [])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .flatMap((cat: any) => cat.stats ?? [])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .slice(0, 12).map((s: any) => ({
+        name: s.name ?? s.shortDisplayName ?? '',
+        displayValue: s.displayValue ?? String(s.value ?? ''),
+        description: s.description,
+      }))
+
+    return {
+      id:          a.id ?? athleteId,
+      name:        a.shortName ?? a.displayName ?? '',
+      fullName:    a.displayName ?? a.fullName ?? '',
+      headshot:    a.headshot?.href,
+      jersey:      a.jersey,
+      position:    a.position?.displayName ?? a.position?.abbreviation ?? '',
+      age:         a.age,
+      height:      a.displayHeight,
+      weight:      a.displayWeight,
+      birthPlace:  a.birthPlace ? [a.birthPlace.city, a.birthPlace.country].filter(Boolean).join(', ') : undefined,
+      experience:  a.experience?.displayValue,
+      college:     a.college?.name,
+      sport,
+      team: teamRef ? {
+        id:    teamRef.id ?? '',
+        name:  teamRef.displayName ?? teamRef.shortDisplayName ?? '',
+        logo:  teamRef.logos?.[0]?.href ?? teamRef.logo ?? '',
+        color: `#${teamRef.color ?? '6366f1'}`,
+      } : undefined,
+      statistics: statsArr,
+    }
+  } catch {
+    return null
+  }
+}
+
+// ─── League leaders ───────────────────────────────────────────────────────────
+
+export type LeagueLeader = {
+  rank: number
+  athleteId: string
+  athleteName: string
+  athleteHeadshot?: string
+  teamName: string
+  teamLogo: string
+  value: string
+  displayValue: string
+}
+
+export type LeaderCategory = {
+  name: string
+  displayName: string
+  leaders: LeagueLeader[]
+}
+
+export async function getLeagueLeaders(sport: SportKey): Promise<LeaderCategory[]> {
+  if (sport === 'f1') return []
+  const { path } = SPORT_CONFIGS[sport]
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await espnFetch(`${ESPN_SITE}/${path}/leaders`) as any
+    const categories = data?.categories ?? []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return categories.slice(0, 6).map((cat: any): LeaderCategory => ({
+      name: cat.name ?? '',
+      displayName: cat.displayName ?? cat.name ?? '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      leaders: (cat.leaders ?? []).slice(0, 10).map((l: any, idx: number): LeagueLeader => {
+        const athlete = l.athlete ?? {}
+        const team    = l.team ?? athlete.team ?? {}
+        return {
+          rank:              idx + 1,
+          athleteId:         athlete.id ?? '',
+          athleteName:       athlete.displayName ?? athlete.shortName ?? '',
+          athleteHeadshot:   athlete.headshot?.href,
+          teamName:          team.displayName ?? team.shortDisplayName ?? '',
+          teamLogo:          team.logos?.[0]?.href ?? team.logo ?? '',
+          value:             String(l.value ?? ''),
+          displayValue:      l.displayValue ?? String(l.value ?? ''),
+        }
+      }),
+    }))
+  } catch {
+    return []
+  }
+}
+
 // ─── Standings ────────────────────────────────────────────────────────────────
 // NOTE: must use /apis/v2/sports/... — the /apis/site/v2/... endpoint returns only {fullViewLink}
 

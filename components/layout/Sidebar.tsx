@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { Home, Activity, Newspaper, Calendar, Settings, LogOut, Trophy, BarChart2, Sparkles } from 'lucide-react'
+import { Home, Activity, Newspaper, Calendar, Settings, LogOut, Trophy, BarChart2, Sparkles, ShieldAlert, ArrowLeftRight, BarChart3, ArrowLeftRight as Compare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ThemeToggle } from './ThemeToggle'
@@ -13,12 +13,17 @@ import Image from 'next/image'
 import type { Session } from 'next-auth'
 
 const navItems = [
-  { href: '/',         label: 'Home',       icon: Home,      exact: true  },
-  { href: '/catchup',  label: 'Catch Up',   icon: Sparkles,  exact: false },
-  { href: '/scores',   label: 'Scores',     icon: Activity,  exact: false },
-  { href: '/news',     label: 'News',       icon: Newspaper, exact: false },
-  { href: '/schedule', label: 'Schedule',   icon: Calendar,  exact: false },
-  { href: '/standings',label: 'Standings',  icon: BarChart2, exact: false },
+  { href: '/',           label: 'Home',       icon: Home,          exact: true  },
+  { href: '/catchup',    label: 'Catch Up',   icon: Sparkles,      exact: false },
+  { href: '/scores',     label: 'Scores',     icon: Activity,      exact: false },
+  { href: '/news',       label: 'News',       icon: Newspaper,     exact: false },
+  { href: '/schedule',   label: 'Schedule',   icon: Calendar,      exact: false },
+  { href: '/standings',  label: 'Standings',  icon: BarChart2,     exact: false },
+  { href: '/digest',     label: 'Digest',     icon: Sparkles,      exact: false },
+  { href: '/injuries',   label: 'Injuries',   icon: ShieldAlert,   exact: false },
+  { href: '/transfers',  label: 'Transfers',  icon: ArrowLeftRight,exact: false },
+  { href: '/stats',      label: 'Stats',      icon: BarChart3,     exact: false },
+  { href: '/compare',    label: 'Compare',    icon: Compare,       exact: false },
 ]
 
 export function Sidebar({ session }: { session: Session }) {
@@ -95,11 +100,11 @@ export function Sidebar({ session }: { session: Session }) {
           <p className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
             Account
           </p>
-          <Link href="/onboarding"
+          <Link href="/settings/sports"
             className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-150"
           >
             <Settings className="w-4 h-4 shrink-0" />
-            My Sports
+            Settings
           </Link>
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}

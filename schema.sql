@@ -71,11 +71,48 @@ CREATE TABLE IF NOT EXISTS game_scores (
   UNIQUE(sport_key, team_id)
 );
 
+-- ─── User settings ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS user_settings (
+  user_id            TEXT PRIMARY KEY,
+  digest_format      TEXT NOT NULL DEFAULT 'brief',
+  digest_time        TIME NOT NULL DEFAULT '08:00',
+  timezone           TEXT NOT NULL DEFAULT 'UTC',
+  email_enabled      BOOLEAN NOT NULL DEFAULT false,
+  notification_prefs JSONB NOT NULL DEFAULT '{"kickoff":true,"finalScore":true,"injury":true}',
+  push_subscription  JSONB DEFAULT NULL,
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ─── Digest history ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS digest_history (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id      TEXT NOT NULL,
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  content      JSONB NOT NULL,
+  format       TEXT NOT NULL DEFAULT 'brief'
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_digest_history_user_date ON digest_history (user_id, (generated_at::date));
+
+-- ─── Email send log ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS email_log (
+  id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id   TEXT NOT NULL,
+  sent_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  status    TEXT NOT NULL,
+  error_msg TEXT
+);
+
+-- ─── Storyline memory (team_context) ─────────────────────────────────────────
+-- Add to user_teams if not already present:
+ALTER TABLE user_teams ADD COLUMN IF NOT EXISTS team_context TEXT DEFAULT NULL;
+
 -- ─── Indexes ─────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS idx_user_sports_user_id  ON user_sports(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_teams_user_id   ON user_teams(user_id);
 CREATE INDEX IF NOT EXISTS idx_game_summaries_game_id ON game_summaries(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_scores_sport_team ON game_scores(sport_key, team_id);
+CREATE INDEX IF NOT EXISTS idx_digest_history_user_id ON digest_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_log_user_id ON email_log(user_id);
 
 -- ─── Row-level security (RLS) ────────────────────────────────────────────────
 -- Enable RLS so users can only see their own data.
@@ -113,3 +150,12 @@ CREATE POLICY "game_scores_insert" ON game_scores
   FOR INSERT WITH CHECK (true);
 CREATE POLICY "game_scores_update" ON game_scores
   FOR UPDATE USING (true);
+
+ALTER TABLE user_settings  ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "user_settings_self" ON user_settings FOR ALL USING (true);
+
+ALTER TABLE digest_history ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "digest_history_self" ON digest_history FOR ALL USING (true);
+
+ALTER TABLE email_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "email_log_self" ON email_log FOR ALL USING (true);

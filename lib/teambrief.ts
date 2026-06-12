@@ -4,6 +4,7 @@ import {
   upsertUserSession,
   getTeamScheduleCache,
   saveTeamScheduleCache,
+  updateTeamContext,
 } from '@/lib/db'
 import { generateTeamBrief, type TeamBriefContext } from '@/lib/anthropic'
 import { getTeamSchedule } from '@/lib/espn-detail'
@@ -93,13 +94,17 @@ export async function getTeamBriefs(userId: string): Promise<TeamBriefs> {
       recent_scores: recentGames,
       top_headline: topHeadline,
       injury_flags: [],
-      last_known_context: null,
+      last_known_context: t.team_context ?? null,
     }
 
     let brief: string | null = null
     if (recentGames.length > 0 || topHeadline) {
       try {
         brief = await generateTeamBrief(context)
+        // NEW5: save the generated brief as the next session's context
+        if (brief) {
+          updateTeamContext(userId, sportKey, t.team_id, brief.slice(0, 500)).catch(() => {})
+        }
       } catch {
         // brief unavailable — UI handles null
       }
