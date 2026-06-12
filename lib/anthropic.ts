@@ -22,7 +22,7 @@ export type TeamBriefContext = {
 }
 
 export async function generateTeamBrief(context: TeamBriefContext): Promise<string> {
-  const model = getClient().getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const model = getClient().getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   const scoresText = context.recent_scores.length > 0
     ? context.recent_scores.map(s => `${s.date}: ${s.result} vs ${s.opponent}`).join('; ')
@@ -54,7 +54,7 @@ Do NOT use bullet points. Do NOT start with "Here's" or "In summary".`
 }
 
 export async function generateGameSummary(game: NormalizedGame): Promise<string> {
-  const model = getClient().getGenerativeModel({ model: 'gemini-2.0-flash' })
+  const model = getClient().getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   const { homeTeam, awayTeam, league, statusText } = game
   const scoreStr = game.status === 'post'
